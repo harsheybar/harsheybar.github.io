@@ -1,0 +1,122 @@
+# Data Sources Configuration for Tumor Surgery Data Agent
+
+data_sources:
+
+  # Centers for Medicare & Medicaid Services
+  cms:
+    base_url: "https://data.cms.gov/provider-data/"
+    datasets:
+      - name: "medicare_provider_charge_data"
+        endpoint: "api/1/datastore/query"
+        description: "Inpatient Charge Data by Provider"
+        geography_level: "zip_code"
+
+      - name: "physician_compare"
+        endpoint: "api/1/datastore/query"
+        description: "Physician Compare National Downloadable File"
+        geography_level: "zip_code"
+
+    rate_limit: "100 requests per minute"
+    authentication: "API key (optional for public data)"
+    notes: "CMS provides public use files (PUF) that don't require authentication"
+
+  # National Cancer Institute
+  nci:
+    base_url: "https://seer.cancer.gov/data-software/"
+    datasets:
+      - name: "seer_stat"
+        description: "SEER*Stat Database - Incidence Data"
+        geography_level: "county, state, registry"
+        access: "Requires data use agreement"
+
+      - name: "seer_medicare"
+        description: "SEER-Medicare Linked Database"
+        geography_level: "zip_code"
+        access: "Requires special approval"
+
+    api_available: false
+    access_method: "Download datasets or special request"
+    notes: "SEER data typically requires data use agreement"
+
+  # TriNetX
+  trinetx:
+    base_url: "https://trinetx.com/"
+    access: "Requires institutional subscription"
+    description: "Global health research network with de-identified patient data"
+    geography_level: "customizable by organization"
+    api_available: true
+    authentication: "OAuth 2.0 with institutional credentials"
+    notes: "Requires institutional access; provides real-time query capabilities"
+
+  # CDC Wonder
+  cdc_wonder:
+    base_url: "https://wonder.cdc.gov/"
+    datasets:
+      - name: "cancer_statistics"
+        description: "United States Cancer Statistics (USCS)"
+        geography_level: "state, county"
+
+    api_available: true
+    access_method: "Web API"
+    notes: "Public access; data may be suppressed for privacy in small areas"
+
+  # HCUP (Healthcare Cost and Utilization Project)
+  hcup:
+    base_url: "https://www.hcup-us.ahrq.gov/"
+    datasets:
+      - name: "nis"
+        description: "Nationwide Inpatient Sample"
+        geography_level: "region"
+
+      - name: "sid"
+        description: "State Inpatient Databases"
+        geography_level: "zip_code (state-specific)"
+
+    access: "Requires data use agreement and purchase"
+    notes: "Comprehensive hospital discharge data; costs apply"
+
+  # American College of Surgeons NSQIP
+  acs_nsqip:
+    base_url: "https://www.facs.org/quality-programs/data-and-registries/acs-nsqip/"
+    description: "National Surgical Quality Improvement Program"
+    access: "Restricted to participating hospitals"
+    geography_level: "hospital"
+    api_available: false
+    notes: "Quality data; restricted access; alternative: use publicly available aggregated reports"
+
+  # Census Bureau (for MSA data)
+  census:
+    base_url: "https://api.census.gov/data"
+    datasets:
+      - name: "acs5"
+        description: "American Community Survey 5-Year Estimates"
+        endpoint: "/2023/acs/acs5"
+        geography_level: "msa, county, zip_code"
+
+      - name: "population_estimates"
+        description: "Population Estimates Program"
+        endpoint: "/2023/pep/population"
+        geography_level: "msa, county, state"
+
+    api_available: true
+    authentication: "API key (free registration)"
+    rate_limit: "500 requests per day (higher with key)"
+    notes: "Free public access; API key increases rate limits"
+
+# Geographic crosswalk files
+geographic_crosswalks:
+  zip_to_msa:
+    source: "HUD USPS ZIP Code Crosswalk Files"
+    url: "https://www.huduser.gov/portal/datasets/usps_crosswalk.html"
+
+  zip_to_county:
+    source: "Census Bureau ZIP Code Tabulation Areas"
+    url: "https://www.census.gov/geographies/reference-files/time-series/geo/relationship-files.html"
+
+# Data quality filters
+data_quality:
+  minimum_case_threshold: 11  # CMS typically suppresses data with <11 cases
+  date_range:
+    start: "2023-01-01"
+    end: "2025-12-31"
+  geographic_scope: "United States (50 states + DC)"

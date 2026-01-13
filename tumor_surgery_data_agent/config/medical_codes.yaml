@@ -1,0 +1,92 @@
+# Medical Codes Configuration for Craniotomy Tumor Resections
+# Focus: Cranial surgeries for tumor indications only
+
+cpt_codes:
+  craniotomy_tumor_resection:
+    # Supratentorial tumor resections
+    - code: "61510"
+      description: "Craniectomy, trephination, bone flap craniotomy; for excision of brain tumor, supratentorial, except meningioma"
+      category: "supratentorial_tumor"
+
+    - code: "61512"
+      description: "Craniectomy for excision of meningioma, supratentorial"
+      category: "supratentorial_meningioma"
+
+    # Infratentorial and posterior fossa
+    - code: "61518"
+      description: "Craniectomy for excision of brain tumor, infratentorial or posterior fossa; except meningioma, cerebellopontine angle tumor, or midline tumor at base of skull"
+      category: "infratentorial_tumor"
+
+    - code: "61519"
+      description: "Craniectomy for excision of meningioma, infratentorial (posterior fossa)"
+      category: "infratentorial_meningioma"
+
+    - code: "61520"
+      description: "Craniectomy for excision of cerebellopontine angle tumor"
+      category: "cerebellopontine_angle"
+
+    - code: "61521"
+      description: "Craniectomy for excision of midline tumor at base of skull"
+      category: "skull_base"
+
+    # Additional related procedures
+    - code: "61524"
+      description: "Craniectomy, transtemporal (mastoid) for excision of cerebellopontine angle tumor"
+      category: "transtemporal_approach"
+
+    - code: "61526"
+      description: "Craniectomy, bone flap craniotomy, transtemporal (mastoid) for excision of cerebellopontine angle tumor"
+      category: "transtemporal_approach"
+
+    - code: "61545"
+      description: "Excision, other than total, of craniopharyngioma"
+      category: "craniopharyngioma"
+
+drgs:
+  cranial_surgery:
+    - code: "023"
+      description: "Craniotomy with major device implant or acute complex CNS principal diagnosis with MCC"
+      severity: "high"
+
+    - code: "024"
+      description: "Craniotomy with major device implant or acute complex CNS principal diagnosis without MCC"
+      severity: "moderate"
+
+    - code: "025"
+      description: "Craniotomy and endovascular intracranial procedures with MCC"
+      severity: "high"
+
+    - code: "026"
+      description: "Craniotomy and endovascular intracranial procedures with CC"
+      severity: "moderate"
+
+    - code: "027"
+      description: "Craniotomy and endovascular intracranial procedures without CC/MCC"
+      severity: "low"
+
+icd10_codes:
+  # Primary brain tumor diagnoses (for filtering)
+  malignant_brain_tumors:
+    - "C71.0"  # Cerebrum, except lobes and ventricles
+    - "C71.1"  # Frontal lobe
+    - "C71.2"  # Temporal lobe
+    - "C71.3"  # Parietal lobe
+    - "C71.4"  # Occipital lobe
+    - "C71.5"  # Cerebral ventricle
+    - "C71.6"  # Cerebellum
+    - "C71.7"  # Brain stem
+    - "C71.8"  # Overlapping sites of brain
+    - "C71.9"  # Brain, unspecified
+
+  benign_brain_tumors:
+    - "D33.0"  # Brain, supratentorial
+    - "D33.1"  # Brain, infratentorial
+    - "D33.2"  # Brain, unspecified
+
+  meningioma:
+    - "D32.0"  # Cerebral meninges
+
+date_range:
+  start: "2023-01-01"
+  end: "2025-12-31"
+  focus: "Most recent data available"

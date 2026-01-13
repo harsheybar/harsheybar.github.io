@@ -1,0 +1,90 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Output files
+output/
+results/
+*.csv
+*.xlsx
+*.xls
+!config/*.yaml
+!examples/*.csv
+
+# Data files
+data/
+raw_data/
+processed_data/
+
+# API keys and secrets
+.env
+secrets.yaml
+credentials.json
+*.key
+
+# Visualizations (optional - uncomment if you want to ignore)
+# *.png
+# *.jpg
+# *.html
+# *.pdf
+
+# Logs
+*.log
+logs/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Documentation builds
+docs/_build/
+docs/_static/
+docs/_templates/
+
+# OS
+Thumbs.db
+Desktop.ini
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+temp/
+tmp/
