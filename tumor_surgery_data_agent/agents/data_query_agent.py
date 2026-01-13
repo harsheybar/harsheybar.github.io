@@ -37,46 +37,65 @@ class DataQueryAgent:
     def query_cms_provider_data(
         self,
         api_key: Optional[str] = None,
-        limit: int = 10000
+        limit: int = 10000,
+        offset: int = 0
     ) -> pd.DataFrame:
         """
         Query CMS Provider Charge Data for craniotomy procedures.
 
+        Uses the CMS Data API v1 for procedure summary data.
+
         Args:
             api_key: Optional API key for higher rate limits
-            limit: Maximum number of records to retrieve
+            limit: Maximum number of records to retrieve per request
+            offset: Offset for pagination
 
         Returns:
             DataFrame with provider charge data by geography
         """
         logger.info("Querying CMS Provider Charge Data...")
 
-        cms_config = self.config.get_data_source_config('cms')
-        base_url = cms_config['base_url']
-
-        # CMS Socrata API endpoint for Medicare Provider Utilization
-        # Note: This is an example - actual dataset IDs need to be verified
-        dataset_id = "nrth-mfg3"  # Example: Medicare Physician & Other Practitioners
-        url = f"https://data.cms.gov/resource/{dataset_id}.json"
+        # Use the actual CMS Data API v1 endpoint for procedure summary
+        url = "https://data.cms.gov/data-api/v1/dataset/164fc736-4179-4100-9f79-592b69e41975/data"
 
         params = {
-            '$limit': limit,
-            '$where': self._build_cpt_filter(),
-            '$order': 'nppes_provider_zip_code',
+            'size': limit,
+            'offset': offset,
         }
 
+        headers = {}
+        if api_key:
+            headers['Authorization'] = f'Bearer {api_key}'
+
         try:
-            response = requests.get(url, params=params, timeout=30)
+            response = requests.get(url, params=params, headers=headers, timeout=60)
             response.raise_for_status()
 
             data = response.json()
-            df = pd.DataFrame(data)
 
-            logger.info(f"Retrieved {len(df)} records from CMS")
+            # CMS Data API v1 returns data in a specific format
+            if isinstance(data, list):
+                df = pd.DataFrame(data)
+            elif isinstance(data, dict) and 'data' in data:
+                df = pd.DataFrame(data['data'])
+            else:
+                df = pd.DataFrame(data)
+
+            logger.info(f"Retrieved {len(df)} records from CMS Data API")
+
+            # Filter for relevant CPT codes if data contains procedure codes
+            if not df.empty:
+                df = self._filter_cms_by_cpt(df)
+                logger.info(f"After CPT filtering: {len(df)} records")
+
             return self._process_cms_data(df)
 
         except requests.RequestException as e:
             logger.error(f"Error querying CMS data: {e}")
+            logger.info("Tip: CMS Data API may require specific filtering. Check dataset documentation.")
+            return pd.DataFrame()
+        except Exception as e:
+            logger.error(f"Error processing CMS data: {e}")
             return pd.DataFrame()
 
     def query_cms_inpatient_data(
@@ -265,6 +284,41 @@ class DataQueryAgent:
         elif 'drg_code' in df.columns:
             return df[df['drg_code'].isin(self.drg_codes)]
         return df
+
+    def _filter_cms_by_cpt(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Filter CMS data by CPT codes for craniotomy procedures.
+
+        Tries multiple possible column names for procedure codes.
+        """
+        if df.empty:
+            return df
+
+        # Try different possible column names
+        possible_columns = [
+            'hcpcs_code', 'HCPCS_Code', 'procedure_code',
+            'cpt_code', 'CPT', 'code', 'proc_cd'
+        ]
+
+        code_column = None
+        for col in possible_columns:
+            if col in df.columns:
+                code_column = col
+                break
+
+        if code_column is None:
+            logger.warning(f"No CPT/HCPCS code column found in CMS data. Columns: {df.columns.tolist()}")
+            return df
+
+        # Filter for our CPT codes
+        filtered = df[df[code_column].isin(self.cpt_codes)]
+
+        if filtered.empty:
+            logger.warning(f"No records matched CPT codes {self.cpt_codes}")
+            # Return original dataframe if no matches (may need manual filtering)
+            return df
+
+        return filtered
 
     def _process_cms_data(self, df: pd.DataFrame) -> pd.DataFrame:
         """Process and standardize CMS provider data."""

@@ -2,6 +2,15 @@
 
 A comprehensive multi-agent system for querying public health data sources to identify geographic coldspots in cranial tumor surgery access across the United States.
 
+## 🚀 Quick Start for Production Users
+
+**Have API keys ready?** Jump straight to:
+- **API Quick Reference**: [`API_QUICK_REFERENCE.md`](API_QUICK_REFERENCE.md) - Your credentials and quick commands
+- **Production Config**: Run `python production_config.py --test-only` to test your setup
+- **TriNetX Setup**: [`TRINETX_SETUP.md`](TRINETX_SETUP.md) - When you receive OAuth credentials
+
+**New to the system?** Continue reading below for full documentation.
+
 ## Overview
 
 This system consists of two primary agents:
