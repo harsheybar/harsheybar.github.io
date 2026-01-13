@@ -40,6 +40,8 @@ ENV/
 # Output files
 output/
 results/
+test_output/
+production_results/
 *.csv
 *.xlsx
 *.xls
