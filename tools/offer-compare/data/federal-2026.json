@@ -1,0 +1,56 @@
+{
+  "taxYear": 2026,
+  "source": "IRS Rev. Proc. inflation adjustments; verify against irs.gov before relying.",
+  "lastUpdated": "2026-04",
+  "standardDeduction": {
+    "single": 15750,
+    "mfj": 31500,
+    "hoh": 23625
+  },
+  "brackets": {
+    "single": [
+      { "upTo": 12200,  "rate": 0.10 },
+      { "upTo": 49650,  "rate": 0.12 },
+      { "upTo": 105850, "rate": 0.22 },
+      { "upTo": 202000, "rate": 0.24 },
+      { "upTo": 256550, "rate": 0.32 },
+      { "upTo": 641400, "rate": 0.35 },
+      { "upTo": null,   "rate": 0.37 }
+    ],
+    "mfj": [
+      { "upTo": 24400,  "rate": 0.10 },
+      { "upTo": 99300,  "rate": 0.12 },
+      { "upTo": 211700, "rate": 0.22 },
+      { "upTo": 404000, "rate": 0.24 },
+      { "upTo": 513100, "rate": 0.32 },
+      { "upTo": 770050, "rate": 0.35 },
+      { "upTo": null,   "rate": 0.37 }
+    ],
+    "hoh": [
+      { "upTo": 17400,  "rate": 0.10 },
+      { "upTo": 66400,  "rate": 0.12 },
+      { "upTo": 105850, "rate": 0.22 },
+      { "upTo": 202000, "rate": 0.24 },
+      { "upTo": 256550, "rate": 0.32 },
+      { "upTo": 641400, "rate": 0.35 },
+      { "upTo": null,   "rate": 0.37 }
+    ]
+  },
+  "fica": {
+    "ssRate": 0.062,
+    "ssWageBase": 184500,
+    "medicareRate": 0.0145,
+    "addlMedicareRate": 0.009,
+    "addlMedicareThreshold": {
+      "single": 200000,
+      "mfj":    250000,
+      "hoh":    200000
+    }
+  },
+  "retirementLimits": {
+    "elective401k403b": 24500,
+    "elective457b":     24500,
+    "hsaSelf":           4400,
+    "hsaFamily":         8750
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "taxYear": 2026,
+  "notes": "Selected major cities/counties with local income tax. Rates apply to taxable wages where indicated; some are flat-on-gross and noted accordingly. Verify with local taxing authority. List is not exhaustive — omitted localities default to 0.",
+  "lastUpdated": "2026-04",
+  "localities": {
+    "NYC":              { "name": "New York City",        "state": "NY", "type": "progressive", "appliesTo": "stateTaxableIncome", "brackets": { "single": [{"upTo":12000,"rate":0.03078},{"upTo":25000,"rate":0.03762},{"upTo":50000,"rate":0.03819},{"upTo":null,"rate":0.03876}], "mfj": [{"upTo":21600,"rate":0.03078},{"upTo":45000,"rate":0.03762},{"upTo":90000,"rate":0.03819},{"upTo":null,"rate":0.03876}] } },
+    "Yonkers":          { "name": "Yonkers, NY",          "state": "NY", "type": "surcharge", "appliesTo": "nyStateTaxLiability", "rate": 0.16675 },
+    "Philadelphia":     { "name": "Philadelphia, PA",     "state": "PA", "type": "flat", "appliesTo": "gross", "rate": 0.0375 },
+    "Pittsburgh":       { "name": "Pittsburgh, PA",       "state": "PA", "type": "flat", "appliesTo": "gross", "rate": 0.03 },
+    "BaltimoreCity":    { "name": "Baltimore City, MD",   "state": "MD", "type": "flat", "appliesTo": "stateTaxableIncome", "rate": 0.0320 },
+    "MontgomeryMD":     { "name": "Montgomery County, MD","state": "MD", "type": "flat", "appliesTo": "stateTaxableIncome", "rate": 0.0320 },
+    "PrinceGeorgesMD":  { "name": "Prince George's Co, MD","state": "MD","type": "flat", "appliesTo": "stateTaxableIncome", "rate": 0.0320 },
+    "HowardMD":         { "name": "Howard County, MD",    "state": "MD", "type": "flat", "appliesTo": "stateTaxableIncome", "rate": 0.0320 },
+    "AnneArundelMD":    { "name": "Anne Arundel County, MD","state":"MD","type":"flat","appliesTo":"stateTaxableIncome","rate":0.0281},
+    "BaltimoreCoMD":    { "name": "Baltimore County, MD", "state": "MD", "type": "flat", "appliesTo": "stateTaxableIncome", "rate": 0.0320 },
+    "Columbus":         { "name": "Columbus, OH",         "state": "OH", "type": "flat", "appliesTo": "gross", "rate": 0.025 },
+    "Cleveland":        { "name": "Cleveland, OH",        "state": "OH", "type": "flat", "appliesTo": "gross", "rate": 0.025 },
+    "Cincinnati":       { "name": "Cincinnati, OH",       "state": "OH", "type": "flat", "appliesTo": "gross", "rate": 0.018 },
+    "Toledo":           { "name": "Toledo, OH",           "state": "OH", "type": "flat", "appliesTo": "gross", "rate": 0.025 },
+    "Akron":            { "name": "Akron, OH",            "state": "OH", "type": "flat", "appliesTo": "gross", "rate": 0.025 },
+    "Dayton":           { "name": "Dayton, OH",           "state": "OH", "type": "flat", "appliesTo": "gross", "rate": 0.025 },
+    "Detroit":          { "name": "Detroit, MI",          "state": "MI", "type": "flat", "appliesTo": "gross", "rate": 0.024 },
+    "GrandRapids":      { "name": "Grand Rapids, MI",     "state": "MI", "type": "flat", "appliesTo": "gross", "rate": 0.0135 },
+    "KansasCityMO":     { "name": "Kansas City, MO",      "state": "MO", "type": "flat", "appliesTo": "gross", "rate": 0.01 },
+    "StLouis":          { "name": "St. Louis, MO",        "state": "MO", "type": "flat", "appliesTo": "gross", "rate": 0.01 },
+    "Louisville":       { "name": "Louisville, KY",       "state": "KY", "type": "flat", "appliesTo": "gross", "rate": 0.0145 },
+    "Lexington":        { "name": "Lexington, KY",        "state": "KY", "type": "flat", "appliesTo": "gross", "rate": 0.0225 },
+    "Indianapolis":     { "name": "Indianapolis (Marion Co), IN", "state": "IN", "type": "flat", "appliesTo": "gross", "rate": 0.0202 },
+    "Wilmington":       { "name": "Wilmington, DE",       "state": "DE", "type": "flat", "appliesTo": "gross", "rate": 0.0125 },
+    "BirminghamAL":     { "name": "Birmingham, AL",       "state": "AL", "type": "flat", "appliesTo": "gross", "rate": 0.01 },
+    "NewarkNJ":         { "name": "Newark, NJ",           "state": "NJ", "type": "flat", "appliesTo": "gross", "rate": 0.01 }
+  }
+}

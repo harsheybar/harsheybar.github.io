@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Neurosurgery Offer Comparison</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <h1>Neurosurgery Offer Comparison</h1>
+      <p class="tag">Tax-adjusted, COL-adjusted multi-year compensation modeling. 100% local — nothing leaves your browser.</p>
+    </div>
+    <div class="topbar-actions">
+      <button id="btn-add-offer" class="primary">+ Add offer</button>
+      <button id="btn-export">Export JSON</button>
+      <label class="file-btn">
+        Import JSON
+        <input id="input-import" type="file" accept="application/json" hidden>
+      </label>
+      <button id="btn-share">Copy share URL</button>
+      <button id="btn-clear" class="danger">Clear all</button>
+    </div>
+  </header>
+
+  <section class="settings">
+    <details>
+      <summary>Global settings</summary>
+      <div class="settings-grid">
+        <label>Filing status
+          <select id="g-filing">
+            <option value="mfj">Married filing jointly</option>
+            <option value="single">Single</option>
+            <option value="hoh">Head of household</option>
+          </select>
+        </label>
+        <label>Discount rate (NPV)
+          <input id="g-discount" type="number" step="0.005" value="0.05">
+        </label>
+        <label>Time horizon (yrs)
+          <input id="g-years" type="number" min="1" max="15" value="5">
+        </label>
+      </div>
+      <p class="muted">
+        Tax data: 2026 federal + state + selected local. <strong>Verify data against IRS / state DOR before relying.</strong>
+        Cost of living: BEA Regional Price Parities (~2023 release). Housing override is per-offer.
+      </p>
+    </details>
+  </section>
+
+  <main>
+    <section id="offers-list" class="offers-list" aria-label="Offers"></section>
+    <section id="comparison" class="comparison" aria-label="Comparison"></section>
+  </main>
+
+  <!-- Offer editor modal -->
+  <dialog id="editor">
+    <form id="editor-form" method="dialog">
+      <header class="editor-header">
+        <h2 id="editor-title">Edit offer</h2>
+        <button type="button" class="close" id="editor-close" aria-label="Close">×</button>
+      </header>
+
+      <div class="editor-body">
+        <fieldset>
+          <legend>Basics</legend>
+          <label>Offer name <input name="meta.name" required></label>
+          <label>State
+            <select name="meta.state" id="editor-state"></select>
+          </label>
+          <label>Metro / location (BEA)
+            <select name="meta.locationKey" id="editor-location"></select>
+          </label>
+          <label>Local tax (city)
+            <select name="meta.localityKey" id="editor-locality">
+              <option value="">— none —</option>
+            </select>
+          </label>
+          <label>Contract years <input type="number" min="1" max="15" name="meta.contractYears" value="5"></label>
+          <label>Filing status
+            <select name="filingStatus">
+              <option value="mfj">MFJ</option>
+              <option value="single">Single</option>
+              <option value="hoh">HoH</option>
+            </select>
+          </label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Cash</legend>
+          <label>Base salary ($/yr) <input type="number" step="1000" name="cash.base"></label>
+          <label class="hint">Year-by-year base override (comma-sep, blank = use base)
+            <input name="cash.baseYearly" placeholder="e.g. 600000, 650000, 700000">
+          </label>
+          <label>Sign-on bonus <input type="number" name="cash.signOn.amount"></label>
+          <label>Sign-on clawback (yrs) <input type="number" name="cash.signOn.clawbackYears"></label>
+          <label>Relocation allowance <input type="number" name="cash.relocation"></label>
+          <label>CME allowance ($/yr) <input type="number" name="cash.cmeAllowance"></label>
+          <label class="hint">Loan repayment ($/yr)
+            <input type="number" name="cash.loanRepayment.annual">
+          </label>
+          <label>Loan repayment cap (total) <input type="number" name="cash.loanRepayment.totalCap"></label>
+          <label class="checkbox">
+            <input type="checkbox" name="cash.loanRepayment.taxable">
+            Loan repayment is taxable to me
+          </label>
+          <label class="hint">Retention (year:amount, comma-sep — e.g. "2:50000, 3:75000")
+            <input name="cash.retention" placeholder="2:50000, 3:75000">
+          </label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Productivity (wRVU)</legend>
+          <label>$ per wRVU above threshold <input type="number" step="0.5" name="cash.wRVU.ratePerRVU"></label>
+          <label>Annual wRVU threshold <input type="number" name="cash.wRVU.threshold"></label>
+          <label>Expected annual wRVU volume <input type="number" name="cash.wRVU.expectedVolume"></label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Call &amp; stipends</legend>
+          <label>Call pay per shift <input type="number" name="cash.call.perShift"></label>
+          <label>Call shifts / year <input type="number" name="cash.call.shiftsPerYear"></label>
+          <label>Annual call stipend <input type="number" name="cash.call.annualStipend"></label>
+          <label>Medical directorship ($/yr) <input type="number" name="cash.directorship.annual"></label>
+          <label>Quality bonus — expected ($/yr) <input type="number" name="cash.qualityBonus.expectedAnnual"></label>
+          <label>Quality bonus — max ($/yr) <input type="number" name="cash.qualityBonus.maxAnnual"></label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Benefits</legend>
+          <label>401(k)/403(b) match — % of contribution matched
+            <input type="number" step="0.01" name="benefits.retirement.plan401kMatchPct" placeholder="0.50 = 50% match">
+          </label>
+          <label>401(k)/403(b) match — cap (% of salary)
+            <input type="number" step="0.01" name="benefits.retirement.plan401kMatchCapPct" placeholder="0.06 = up to 6% of salary">
+          </label>
+          <label class="checkbox">
+            <input type="checkbox" name="benefits.retirement.has457b">
+            457(b) available (governmental / non-profit)
+          </label>
+          <label>Cash balance / DB plan ($/yr) <input type="number" name="benefits.retirement.cashBalanceAnnual"></label>
+          <label>Profit-sharing ($/yr) <input type="number" name="benefits.retirement.profitShareAnnual"></label>
+          <label>Health premium employer share ($/yr) <input type="number" name="benefits.healthPremiumEmployerAnnual"></label>
+          <label>Life insurance face amount <input type="number" name="benefits.lifeInsuranceFace"></label>
+          <label class="checkbox"><input type="checkbox" name="benefits.disability.shortTermCovered"> Short-term disability covered</label>
+          <label class="checkbox"><input type="checkbox" name="benefits.disability.longTermCovered"> Long-term disability covered</label>
+          <label>Malpractice type
+            <select name="benefits.malpractice.type">
+              <option value="occurrence">Occurrence</option>
+              <option value="claims-made">Claims-made</option>
+            </select>
+          </label>
+          <label>Tail coverage cost (if claims-made &amp; you pay) <input type="number" name="benefits.malpractice.tailCoverageCostIfClaimsMade"></label>
+          <label>PTO (weeks/yr) <input type="number" step="0.5" name="benefits.pto.weeksPTO"></label>
+          <label>CME days/yr <input type="number" name="benefits.pto.cmeDays"></label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Pre-tax deductions (yours)</legend>
+          <label>401(k)/403(b) contribution ($/yr) <input type="number" name="preTax.contribution401k"></label>
+          <label>457(b) contribution ($/yr) <input type="number" name="preTax.contribution457b"></label>
+          <label>HSA contribution ($/yr) <input type="number" name="preTax.contributionHSA"></label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Cost-of-living &amp; hours</legend>
+          <label>Override: monthly housing cost (rent or mortgage P+I+T+I)
+            <input type="number" name="housingOverride.monthlyHousingCost" placeholder="leave blank to use BEA average">
+          </label>
+          <label>Clinical hours / week <input type="number" name="workHours.clinicalHoursPerWeek"></label>
+          <label>Weeks worked / year <input type="number" name="workHours.weeksWorked"></label>
+          <label>Call hours / year (extra) <input type="number" name="workHours.callHoursPerYear"></label>
+        </fieldset>
+      </div>
+
+      <footer class="editor-footer">
+        <button type="button" id="editor-cancel">Cancel</button>
+        <button type="submit" class="primary">Save offer</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <footer class="page-footer">
+    <p>
+      Not financial, tax, or legal advice. Estimates are for comparison purposes only — verify
+      every number against the actual contract, IRS publications, and licensed advisors.
+      Open-source: <a href="https://github.com/harsheybar/harsheybar.github.io">github.com/harsheybar/harsheybar.github.io</a>.
+    </p>
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
