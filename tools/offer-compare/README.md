@@ -62,6 +62,31 @@ to live well above or below the local median.
 - Effective $/hour after-tax, given clinical + call hours.
 - Effective composite RPP (after housing override, if any).
 
+**PSLF / loans:** When a federal-loan balance is set in global settings, the
+tool projects each offer's lifetime loan trajectory:
+- For PSLF-eligible offers (501(c)(3) non-profit / government employer flag):
+  auto-selects PAYE / new-IBR (the canonical PSLF plans — 10% of discretionary
+  income, capped at the standard-10yr payment); reports total out-of-pocket
+  paid before forgiveness + the forgiven balance.
+- For non-eligible offers: models standard 10-year payoff, reporting total
+  paid (including interest).
+- Year-by-year loan payments are folded into the cash-flow comparison so the
+  "after-tax after loan" line shows real take-home.
+
+**PSLF caveats:**
+- The std-10yr cap in real-world PAYE/IBR is fixed at the amount calculated
+  when you first entered the plan. The tool conservatively recomputes the cap
+  against the *current* balance, which slightly underestimates forgiveness
+  benefit for borrowers who entered PAYE during residency at low income.
+- ICR is intentionally excluded from the auto-pick. While ICR's 12-yr fixed
+  amortization can be nominally lower than the std-10yr cap, ICR has interest-
+  capitalization gotchas and is not the recommended PSLF route.
+- PSLF forgiveness is federal-tax-free. Some states tax it. Not modeled here.
+- The post-2024 SAVE plan injunction and OBBBA RAP rollout are not modeled.
+  PAYE/new-IBR are assumed available; verify your eligibility.
+- Family size for IDR is set globally and defaults to 2 (MFJ).
+- Federal poverty guidelines used are 2026 estimates (continental US).
+
 ## Data sources
 
 All data lives in `data/*.json` and can be hand-edited:
@@ -86,6 +111,11 @@ re-verified each tax year before the tool drives a real decision.
 - Inflation forecasting across the contract horizon.
 - Quality-of-life weighting (call frequency, schools, commute, family proximity)
   — purely financial in v1.
+- Private student loans (PSLF/IDR don't apply); refinancing scenarios.
+- State taxation of PSLF-forgiven balances (most states follow federal exclusion;
+  a handful do not — verify your state).
+- 25-yr taxable-forgiveness IDR scenario for non-PSLF borrowers (modeled as
+  standard 10-yr payoff, which is cheapest for high earners).
 
 ## Disclaimer
 

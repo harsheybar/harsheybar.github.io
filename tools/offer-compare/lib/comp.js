@@ -1,5 +1,6 @@
 import { computeAllTaxes } from "./tax.js";
 import { lookupRpp, compositeRpp, colAdjust } from "./col.js";
+import { projectForOffer as projectLoanForOffer } from "./pslf.js";
 
 // Defaults for an offer; merge with user data when computing.
 export const DEFAULT_OFFER = () => ({
@@ -35,7 +36,15 @@ export const DEFAULT_OFFER = () => ({
   preTax: { contribution401k: 0, contribution457b: 0, contributionHSA: 0 },
   filingStatus: "mfj",
   housingOverride: null, // { monthlyHousingCost: number }
-  workHours: { clinicalHoursPerWeek: 50, weeksWorked: 48, callHoursPerYear: 0 }
+  workHours: { clinicalHoursPerWeek: 50, weeksWorked: 48, callHoursPerYear: 0 },
+  pslfEligible: false   // 501(c)(3) non-profit or government employer
+});
+
+export const DEFAULT_LOAN_SETTINGS = () => ({
+  balance: 0,
+  paymentsMade: 0,
+  annualRate: 0.07,
+  familySize: 2
 });
 
 function cryptoRandomId() {
@@ -83,7 +92,7 @@ function retirementMatchValue(base, retire, contribution401k) {
 }
 
 // Build a year-by-year stream for one offer.
-export function buildSchedule(offer, federalData, stateTaxData, localTaxData, beaData) {
+export function buildSchedule(offer, federalData, stateTaxData, localTaxData, beaData, loanSettings) {
   const years = Math.max(1, Number(offer.meta.contractYears) || 1);
   const stateData = stateTaxData.states[offer.meta.state];
   const locality  = offer.meta.localityKey ? localTaxData.localities[offer.meta.localityKey] : null;
@@ -92,6 +101,16 @@ export function buildSchedule(offer, federalData, stateTaxData, localTaxData, be
     rppRow.rpp, rppRow.rentsRpp, beaData.housingWeight,
     offer.housingOverride?.monthlyHousingCost
   );
+
+  // Loan / PSLF projection. Use Y2-equivalent steady-state AGI as a proxy
+  // for the IDR formula (Y1 may include sign-on which inflates AGI).
+  let loanProjection = null;
+  if (loanSettings && loanSettings.balance > 0) {
+    const steadyAgi = baseForYear(offer.cash, 2) + productivityBonus(offer.cash.wRVU)
+                    + (offer.cash.directorship?.annual || 0)
+                    + (offer.cash.qualityBonus?.expectedAnnual || 0);
+    loanProjection = projectLoanForOffer({ offer, agi: steadyAgi, loanSettings });
+  }
 
   const schedule = [];
   for (let y = 1; y <= years; y++) {
@@ -145,6 +164,9 @@ export function buildSchedule(offer, federalData, stateTaxData, localTaxData, be
 
     const afterTaxCash = grossW2 - tax.totalTax;
     const colAdjustedCash = colAdjust(afterTaxCash, effRpp);
+    const loanThisYr = loanProjection?.yearlyPayments?.[y - 1] || 0;
+    const afterTaxAfterLoan = afterTaxCash - loanThisYr;
+    const colAdjAfterLoan = colAdjust(afterTaxAfterLoan, effRpp);
 
     schedule.push({
       year: y,
@@ -156,18 +178,21 @@ export function buildSchedule(offer, federalData, stateTaxData, localTaxData, be
       tax,
       afterTaxCash,
       colAdjustedCash,
+      loanPayment: loanThisYr,
+      afterTaxAfterLoan,
+      colAdjAfterLoan,
       totalEconomicValue: afterTaxCash + benefitsValue,
       colAdjustedTotal: colAdjust(afterTaxCash + benefitsValue, effRpp)
     });
   }
 
-  return { schedule, effRpp, rppRow, locality };
+  return { schedule, effRpp, rppRow, locality, loanProjection };
 }
 
 export function summarize(offer, federalData, stateTaxData, localTaxData, beaData, opts = {}) {
-  const { discountRate = 0.05 } = opts;
-  const { schedule, effRpp, rppRow, locality } = buildSchedule(
-    offer, federalData, stateTaxData, localTaxData, beaData
+  const { discountRate = 0.05, loanSettings = null } = opts;
+  const { schedule, effRpp, rppRow, locality, loanProjection } = buildSchedule(
+    offer, federalData, stateTaxData, localTaxData, beaData, loanSettings
   );
 
   const sumKey = (k) => schedule.reduce((s, r) => s + (r[k] || 0), 0);
@@ -185,6 +210,7 @@ export function summarize(offer, federalData, stateTaxData, localTaxData, beaDat
     effRpp,
     rppRow,
     locality,
+    loan: loanProjection,
     totals: {
       grossW2: sumKey("grossW2"),
       benefitsValue: sumKey("benefitsValue"),
@@ -192,12 +218,16 @@ export function summarize(offer, federalData, stateTaxData, localTaxData, beaDat
       afterTaxCash: sumKey("afterTaxCash"),
       colAdjustedCash: sumKey("colAdjustedCash"),
       colAdjustedTotal: sumKey("colAdjustedTotal"),
-      tax: sumKey("grossW2") - sumKey("afterTaxCash")
+      tax: sumKey("grossW2") - sumKey("afterTaxCash"),
+      loanInContract: sumKey("loanPayment"),
+      afterTaxAfterLoanInContract: sumKey("afterTaxAfterLoan"),
+      colAdjAfterLoanInContract: sumKey("colAdjAfterLoan")
     },
     npv: {
       afterTaxCash: npv("afterTaxCash"),
       totalEconomicValue: npv("totalEconomicValue"),
-      colAdjustedTotal: npv("colAdjustedTotal")
+      colAdjustedTotal: npv("colAdjustedTotal"),
+      colAdjAfterLoan: npv("colAdjAfterLoan")
     },
     effectiveHourly,
     annualHours

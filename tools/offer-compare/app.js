@@ -1,7 +1,7 @@
 import { fmtUSD, fmtPct, fmtNumber } from "./lib/format.js";
 import { loadAll, saveAll, clearAll, exportJSON, importJSON,
          encodeStateToHash, decodeStateFromHash } from "./lib/storage.js";
-import { summarize, DEFAULT_OFFER } from "./lib/comp.js";
+import { summarize, DEFAULT_OFFER, DEFAULT_LOAN_SETTINGS } from "./lib/comp.js";
 
 // ─── Data load ──────────────────────────────────────────────────────────────
 const [federalData, stateTaxData, localTaxData, beaData] = await Promise.all([
@@ -14,12 +14,14 @@ const [federalData, stateTaxData, localTaxData, beaData] = await Promise.all([
 // ─── State ──────────────────────────────────────────────────────────────────
 const initialState = {
   offers: [],
-  settings: { filingStatus: "mfj", discountRate: 0.05, horizonYears: 5 }
+  settings: { filingStatus: "mfj", discountRate: 0.05, horizonYears: 5 },
+  loans: DEFAULT_LOAN_SETTINGS()
 };
 
 let state = decodeStateFromHash(location.hash) || loadAll() || initialState;
 if (!state.offers) state.offers = [];
 if (!state.settings) state.settings = initialState.settings;
+if (!state.loans) state.loans = DEFAULT_LOAN_SETTINGS();
 
 function persist() {
   saveAll(state);
@@ -255,12 +257,27 @@ gFiling.addEventListener("change", () => { state.settings.filingStatus = gFiling
 gDiscount.addEventListener("change", () => { state.settings.discountRate = Number(gDiscount.value) || 0; persist(); render(); });
 gYears.addEventListener("change", () => { state.settings.horizonYears = Number(gYears.value) || 5; persist(); render(); });
 
+// Loan / PSLF settings
+const gLoanBal = $("#g-loan-balance");
+const gLoanPaid = $("#g-loan-payments-made");
+const gLoanRate = $("#g-loan-rate");
+const gLoanFam  = $("#g-loan-family-size");
+gLoanBal.value = state.loans.balance;
+gLoanPaid.value = state.loans.paymentsMade;
+gLoanRate.value = state.loans.annualRate;
+gLoanFam.value  = state.loans.familySize;
+gLoanBal.addEventListener("change",  () => { state.loans.balance = Number(gLoanBal.value) || 0; persist(); render(); });
+gLoanPaid.addEventListener("change", () => { state.loans.paymentsMade = Math.min(120, Math.max(0, Number(gLoanPaid.value) || 0)); persist(); render(); });
+gLoanRate.addEventListener("change", () => { state.loans.annualRate = Number(gLoanRate.value) || 0; persist(); render(); });
+gLoanFam.addEventListener("change",  () => { state.loans.familySize = Math.max(1, Number(gLoanFam.value) || 1); persist(); render(); });
+
 // ─── Rendering ──────────────────────────────────────────────────────────────
 function summaryFor(offer) {
   // Apply global horizon if offer's contractYears wasn't user-set; we keep
   // the offer's own contractYears as authoritative since it's per-offer.
   return summarize(offer, federalData, stateTaxData, localTaxData, beaData, {
-    discountRate: state.settings.discountRate
+    discountRate: state.settings.discountRate,
+    loanSettings: state.loans
   });
 }
 
@@ -282,14 +299,20 @@ function renderOffers() {
 
   offersList.innerHTML = state.offers.map(o => {
     const s = summaryFor(o);
+    const loanLine = s.loan
+      ? (s.loan.eligible
+          ? `<div class="sub">PSLF · ${escapeHtml(s.loan.planName)} · paid ${fmtUSD(s.loan.totalPaid, { compact: true })} + forgiven ${fmtUSD(s.loan.forgiven, { compact: true })}</div>`
+          : `<div class="sub">No PSLF · standard 10y payoff: ${fmtUSD(s.loan.totalPaid, { compact: true })}</div>`)
+      : "";
     return `
       <article class="offer-card" data-id="${o.id}">
         <h3>${escapeHtml(o.meta.name || "(unnamed)")}</h3>
-        <div class="loc">${escapeHtml(locationLabel(o))} · ${o.meta.contractYears || 0}y</div>
+        <div class="loc">${escapeHtml(locationLabel(o))} · ${o.meta.contractYears || 0}y${o.pslfEligible ? " · PSLF" : ""}</div>
         <div class="headline">${fmtUSD(s.totals.colAdjustedTotal, { compact: true })}</div>
         <div class="sub">${o.meta.contractYears}-yr COL-adjusted total economic value</div>
         <div class="sub">After-tax cash: ${fmtUSD(s.totals.afterTaxCash, { compact: true })} · NPV: ${fmtUSD(s.npv.colAdjustedTotal, { compact: true })}</div>
         <div class="sub">Effective hourly: ${s.effectiveHourly != null ? fmtUSD(s.effectiveHourly, { fractionDigits: 0 }) : "—"}/hr · RPP: ${fmtNumber(s.effRpp, 1)}</div>
+        ${loanLine}
         <div class="actions">
           <button data-act="edit">Edit</button>
           <button data-act="duplicate">Duplicate</button>
@@ -381,6 +404,24 @@ function renderComparison() {
     }).join("");
     yearRows.push(`<tr><td>Year ${y} COL-adj cash</td>${cells}</tr>`);
   }
+  // Year-by-year loan payment rows (only if any loan balance is set)
+  const anyLoan = summaries.some(x => x.s.loan && x.s.loan.monthlyPayment > 0);
+  if (anyLoan) {
+    for (let y = 1; y <= Math.min(maxYears, horizon); y++) {
+      const cells = summaries.map(({ s }) => {
+        const r = s.schedule[y - 1];
+        return r ? `<td>${fmtUSD(r.loanPayment, { compact: true })}</td>` : `<td>—</td>`;
+      }).join("");
+      yearRows.push(`<tr><td>Year ${y} loan payment</td>${cells}</tr>`);
+    }
+    for (let y = 1; y <= Math.min(maxYears, horizon); y++) {
+      const cells = summaries.map(({ s }) => {
+        const r = s.schedule[y - 1];
+        return r ? `<td>${fmtUSD(r.afterTaxAfterLoan, { compact: true })}</td>` : `<td>—</td>`;
+      }).join("");
+      yearRows.push(`<tr><td>Year ${y} after-tax after loan</td>${cells}</tr>`);
+    }
+  }
 
   // Component breakdown bars (totals across contract): cash/benefits/taxes
   const breakdownRows = summaries.map(({ s }) => {
@@ -396,6 +437,43 @@ function renderComparison() {
       </td>
     `;
   }).join("");
+
+  // Loan section: only shown if a balance is set globally
+  let loanSection = "";
+  if (state.loans.balance > 0) {
+    const eligibleCells = summaries.map(({ s }) =>
+      `<td>${s.loan?.eligible ? "Yes" : "No"}</td>`).join("");
+    const planCells = summaries.map(({ s }) =>
+      `<td>${escapeHtml(s.loan?.planName || "—")}</td>`).join("");
+    const monthlyCells = summaries.map(({ s }) =>
+      `<td>${fmtUSD(s.loan?.monthlyPayment || 0, { fractionDigits: 0 })}</td>`).join("");
+    const monthsCells = summaries.map(({ s }) =>
+      `<td>${s.loan?.monthsToCompletion || 0} mo</td>`).join("");
+
+    // Best = lowest career-total out of pocket (totalPaid). Forgiven shown separately.
+    const totalPaidVals = summaries.map(x => x.s.loan?.totalPaid || 0);
+    const forgivenVals  = summaries.map(x => x.s.loan?.forgiven || 0);
+    const allInVals     = summaries.map(x =>
+      (x.s.loan?.totalPaid || 0) - (x.s.loan?.forgiven || 0));
+
+    const totalPaidRow = rowComputed("Total loan paid (career)", totalPaidVals,
+      (v) => fmtUSD(v, { compact: true }), "min");
+    const forgivenRow = rowComputed("Forgiven (PSLF)", forgivenVals,
+      (v) => fmtUSD(v, { compact: true }), "max");
+    const netLoanRow = rowComputed("Net loan cost (paid − forgiven)", allInVals,
+      (v) => fmtUSD(v, { compact: true }), "min", "headline");
+
+    loanSection = `
+      <tr class="section"><td colspan="${1 + summaries.length}">Loans / PSLF (career trajectory)</td></tr>
+      <tr><td>PSLF eligible</td>${eligibleCells}</tr>
+      <tr><td>Optimal plan</td>${planCells}</tr>
+      <tr><td>Monthly payment</td>${monthlyCells}</tr>
+      <tr><td>Months to forgiveness / payoff</td>${monthsCells}</tr>
+      ${totalPaidRow}
+      ${forgivenRow}
+      ${netLoanRow}
+    `;
+  }
 
   comparison.innerHTML = `
     <h2>Comparison</h2>
@@ -418,6 +496,8 @@ function renderComparison() {
         <tr><td>COL-adj after-tax cash only</td>${colCash.map(v => `<td>${fmtUSD(v, { compact: true })}</td>`).join("")}</tr>
         <tr><td>Effective RPP applied</td>${rpps.map(v => `<td>${fmtNumber(v, 1)}</td>`).join("")}</tr>
         <tr><td>Cash · Tax · Benefits split</td>${breakdownRows}</tr>
+
+        ${loanSection}
 
         <tr class="section"><td colspan="${1 + summaries.length}">Year by year</td></tr>
         ${yearRows.join("")}
